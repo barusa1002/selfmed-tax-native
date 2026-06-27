@@ -1,13 +1,21 @@
 {
   "expo": {
-    "name": "selfmed-tax-native",
+    "name": "セルフメディケーション記録帳",
     "slug": "selfmed-tax-native",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.barusa1002.selfmedtax",
+      "infoPlist": {
+        "NSCameraUsageDescription": "薬のバーコードをスキャンするためにカメラを使用します。",
+        "NSPhotoLibraryUsageDescription": "レシート画像を保存するために使用します。"
+      }
+    },
+    "android": {
+      "permissions": ["android.permission.CAMERA"]
     },
     "android": {
       "adaptiveIcon": {
