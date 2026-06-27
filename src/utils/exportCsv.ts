@@ -1,4 +1,4 @@
-import { File, Paths } from 'expo-file-system';
+import * as FileSystem from 'expo-file-system/legacy';
 import * as Sharing from 'expo-sharing';
 import type { PurchaseRecord } from '../types';
 
@@ -10,11 +10,11 @@ export async function exportToCsv(records: PurchaseRecord[], year: number): Prom
   const bom = '﻿';
   const csv = bom + [header, ...rows].join('\n');
 
-  const file = new File(Paths.cache, `selfmed_${year}.csv`);
-  file.write(csv);
+  const path = `${FileSystem.cacheDirectory}selfmed_${year}.csv`;
+  await FileSystem.writeAsStringAsync(path, csv, { encoding: FileSystem.EncodingType.UTF8 });
 
   const canShare = await Sharing.isAvailableAsync();
   if (canShare) {
-    await Sharing.shareAsync(file.uri, { mimeType: 'text/csv', dialogTitle: 'CSVを共有' });
+    await Sharing.shareAsync(path, { mimeType: 'text/csv', dialogTitle: 'CSVを共有' });
   }
 }

@@ -33,6 +33,10 @@ yarn-error.*
 # local env files
 .env*.local
 
+# API keys (do not commit)
+src/config.secret.ts
+src/utils/yahooApi.ts
+
 # typescript
 *.tsbuildinfo
 

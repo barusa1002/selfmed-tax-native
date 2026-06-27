@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { View, Text, StyleSheet, Pressable, TextInput, FlatList, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useNavigation } from '@react-navigation/native';
 import { DRUG_DATABASE, SYMPTOM_CATEGORIES, DRUG_CATEGORIES, searchBySymptom, searchByCategory } from '../data/drugDatabase';
 import type { DrugEntry } from '../data/drugDatabase';
 
@@ -8,6 +9,7 @@ type Mode = 'symptom' | 'category' | 'keyword';
 const GREEN = '#1a6b3c';
 
 export default function DrugSearchScreen() {
+  const navigation = useNavigation<any>();
   const [mode, setMode] = useState<Mode>('symptom');
   const [selectedSymptom, setSelectedSymptom] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('');
@@ -31,7 +33,7 @@ export default function DrugSearchScreen() {
 
   const renderDrugCard = ({ item: drug }: { item: DrugEntry }) => (
     <View style={[s.card, drug.eligible && s.cardEligible]}>
-      <Pressable style={s.cardHeader} onPress={() => setExpanded(expanded === drug.jan ? null : drug.jan)}>
+      <Pressable style={s.cardHeader} onPress={() => setExpanded(expanded === drug.name ? null : drug.name)}>
         <View style={s.cardTitle}>
           <View style={[s.badge, drug.eligible ? s.badgeGreen : s.badgeGray]}>
             <Text style={[s.badgeText, !drug.eligible && s.badgeTextGray]}>{drug.eligible ? '税制対象' : '対象外'}</Text>
@@ -41,10 +43,10 @@ export default function DrugSearchScreen() {
         <View style={s.cardMeta}>
           <Text style={s.cardCategory}>{drug.category}</Text>
           <Text style={s.cardPrice}>¥{fmt(drug.price)}</Text>
-          <Text style={s.expandIcon}>{expanded === drug.jan ? '▲' : '▼'}</Text>
+          <Text style={s.expandIcon}>{expanded === drug.name ? '▲' : '▼'}</Text>
         </View>
       </Pressable>
-      {expanded === drug.jan && (
+      {expanded === drug.name && (
         <View style={s.cardDetail}>
           <Text style={s.detailMaker}>{drug.maker}</Text>
           {drug.activeIngredient ? <Text style={s.detailIngredient}>主成分: {drug.activeIngredient}</Text> : null}
@@ -53,6 +55,12 @@ export default function DrugSearchScreen() {
               <View key={sym} style={s.symTag}><Text style={s.symTagText}>{sym}</Text></View>
             ))}
           </View>
+          <Pressable
+            style={s.addBtn}
+            onPress={() => navigation.navigate('記録・集計', { prefillDrug: drug })}
+          >
+            <Text style={s.addBtnText}>＋ 購入記録に追加</Text>
+          </Pressable>
         </View>
       )}
     </View>
@@ -66,7 +74,7 @@ export default function DrugSearchScreen() {
 
       <FlatList
         data={results}
-        keyExtractor={(d) => d.jan}
+        keyExtractor={(d) => d.name}
         contentContainerStyle={s.listContent}
         keyboardShouldPersistTaps="handled"
         ListHeaderComponent={
@@ -186,4 +194,6 @@ const s = StyleSheet.create({
   symptomsRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 4, marginTop: 4 },
   symTag: { backgroundColor: '#ebf8ff', borderRadius: 99, paddingHorizontal: 8, paddingVertical: 3 },
   symTagText: { fontSize: 11, color: '#2b6cb0' },
+  addBtn: { backgroundColor: GREEN, borderRadius: 8, padding: 10, alignItems: 'center', marginTop: 10 },
+  addBtnText: { color: '#fff', fontWeight: '700', fontSize: 13 },
 });

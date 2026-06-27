@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { View, Text, FlatList, StyleSheet, Pressable, Modal, ScrollView, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useRoute, useNavigation, useFocusEffect } from '@react-navigation/native';
 import type { PurchaseRecord } from '../types';
 import { loadRecords, addRecord, deleteRecord } from '../utils/storage';
 import { filterByYear, calcTaxSummary } from '../utils/tax';
@@ -19,8 +20,22 @@ export default function RecordsScreen() {
   const [showForm, setShowForm] = useState(false);
   const [showScanner, setShowScanner] = useState(false);
   const [prefillDrug, setPrefillDrug] = useState<DrugEntry | null>(null);
+  const route = useRoute<any>();
+  const navigation = useNavigation<any>();
 
   useEffect(() => { loadRecords().then(setRecords); }, []);
+
+  // 薬品検索タブからの「購入記録に追加」を受け取る
+  useFocusEffect(
+    useCallback(() => {
+      const incoming = route.params?.prefillDrug as DrugEntry | undefined;
+      if (incoming) {
+        setPrefillDrug(incoming);
+        setShowForm(true);
+        navigation.setParams({ prefillDrug: undefined });
+      }
+    }, [route.params?.prefillDrug])
+  );
 
   const yearRecords = filterByYear(records, year);
   const summary = calcTaxSummary(yearRecords);
@@ -43,8 +58,12 @@ export default function RecordsScreen() {
     ]);
   }, [records]);
 
-  const handleScanDetected = (drug: DrugEntry) => {
-    setPrefillDrug(drug);
+  const handleScanDetected = (drug: DrugEntry, jan: string) => {
+    // DB未登録の場合はJANコードをnoteにセットして手入力へ誘導
+    const resolved = drug.name
+      ? drug
+      : { ...drug, note: `JAN: ${jan}` };
+    setPrefillDrug(resolved);
     setShowScanner(false);
     setShowForm(true);
   };
@@ -108,6 +127,7 @@ export default function RecordsScreen() {
         <SafeAreaView style={s.modalSafe}>
           <ScrollView contentContainerStyle={s.modalScroll} keyboardShouldPersistTaps="handled">
             <RecordForm
+              key={prefillDrug?.jan ?? 'manual'}
               onAdd={handleAdd}
               onCancel={() => { setShowForm(false); setPrefillDrug(null); }}
               onScanRequest={() => { setShowForm(false); setShowScanner(true); }}

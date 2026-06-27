@@ -80,7 +80,7 @@ export default function RecordForm({ onAdd, onCancel, onScanRequest, prefillDrug
       {suggestions.length > 0 && (
         <FlatList
           data={suggestions}
-          keyExtractor={(d) => d.jan}
+          keyExtractor={(d) => d.name}
           style={s.suggestions}
           renderItem={({ item: d }) => (
             <Pressable style={s.suggestionItem} onPress={() => applySuggestion(d)}>
