@@ -98,7 +98,7 @@ export default function RecordForm({ onAdd, onCancel, onScanRequest, prefillDrug
       <TextInput style={s.input} value={amount} onChangeText={setAmount} placeholder="例: 1280" keyboardType="numeric" />
 
       <Text style={s.label}>購入店舗</Text>
-      <TextInput style={s.input} value={store} onChangeText={setStore} placeholder="例: ウエルシア ○○店" />
+      <TextInput style={s.input} value={store} onChangeText={setStore} placeholder="例: ドラッグストア○○店" />
 
       <Text style={s.label}>メモ</Text>
       <TextInput style={s.input} value={note} onChangeText={setNote} placeholder="例: レシート保管済み" />

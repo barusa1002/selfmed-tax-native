@@ -1,9 +1,10 @@
-import { useState } from 'react';
-import { View, Text, StyleSheet, Pressable, TextInput, FlatList, ScrollView } from 'react-native';
+import { useState, useCallback } from 'react';
+import { View, Text, StyleSheet, Pressable, TextInput, FlatList, ScrollView, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { DRUG_DATABASE, SYMPTOM_CATEGORIES, DRUG_CATEGORIES, searchBySymptom, searchByCategory } from '../data/drugDatabase';
 import type { DrugEntry } from '../data/drugDatabase';
+import { addFavorite, removeFavorite, isFavorite } from '../utils/favorites';
 
 type Mode = 'symptom' | 'category' | 'keyword';
 const GREEN = '#1a6b3c';
@@ -11,6 +12,7 @@ const GREEN = '#1a6b3c';
 export default function DrugSearchScreen() {
   const navigation = useNavigation<any>();
   const [mode, setMode] = useState<Mode>('symptom');
+  const [favoriteNames, setFavoriteNames] = useState<Set<string>>(new Set());
   const [selectedSymptom, setSelectedSymptom] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('');
   const [keyword, setKeyword] = useState('');
@@ -55,12 +57,29 @@ export default function DrugSearchScreen() {
               <View key={sym} style={s.symTag}><Text style={s.symTagText}>{sym}</Text></View>
             ))}
           </View>
-          <Pressable
-            style={s.addBtn}
-            onPress={() => navigation.navigate('記録・集計', { prefillDrug: drug })}
-          >
-            <Text style={s.addBtnText}>＋ 購入記録に追加</Text>
-          </Pressable>
+          <View style={s.detailActions}>
+            <Pressable
+              style={s.addBtn}
+              onPress={() => navigation.navigate('記録・集計', { prefillDrug: drug })}
+            >
+              <Text style={s.addBtnText}>＋ 購入記録に追加</Text>
+            </Pressable>
+            <Pressable
+              style={[s.favBtn, favoriteNames.has(drug.name) && s.favBtnActive]}
+              onPress={async () => {
+                if (favoriteNames.has(drug.name)) {
+                  await removeFavorite(drug.name);
+                  setFavoriteNames(prev => { const ns = new Set(prev); ns.delete(drug.name); return ns; });
+                } else {
+                  await addFavorite(drug);
+                  setFavoriteNames(prev => new Set([...prev, drug.name]));
+                  Alert.alert('登録完了', `「${drug.name}」をお気に入りに追加しました`);
+                }
+              }}
+            >
+              <Text style={s.favBtnText}>{favoriteNames.has(drug.name) ? '⭐ 解除' : '☆ お気に入り'}</Text>
+            </Pressable>
+          </View>
         </View>
       )}
     </View>
@@ -194,6 +213,10 @@ const s = StyleSheet.create({
   symptomsRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 4, marginTop: 4 },
   symTag: { backgroundColor: '#ebf8ff', borderRadius: 99, paddingHorizontal: 8, paddingVertical: 3 },
   symTagText: { fontSize: 11, color: '#2b6cb0' },
-  addBtn: { backgroundColor: GREEN, borderRadius: 8, padding: 10, alignItems: 'center', marginTop: 10 },
+  detailActions: { flexDirection: 'row', gap: 8, marginTop: 10 },
+  addBtn: { flex: 1, backgroundColor: GREEN, borderRadius: 8, padding: 10, alignItems: 'center' },
   addBtnText: { color: '#fff', fontWeight: '700', fontSize: 13 },
+  favBtn: { borderWidth: 1.5, borderColor: '#cbd5e0', borderRadius: 8, padding: 10, alignItems: 'center', minWidth: 100 },
+  favBtnActive: { borderColor: '#f6ad55', backgroundColor: '#fffaf0' },
+  favBtnText: { fontSize: 12, fontWeight: '700', color: '#718096' },
 });

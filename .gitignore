@@ -36,6 +36,7 @@ yarn-error.*
 # API keys (do not commit)
 src/config.secret.ts
 src/utils/yahooApi.ts
+src/config/gemini.ts
 
 # typescript
 *.tsbuildinfo

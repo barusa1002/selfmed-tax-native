@@ -2,13 +2,16 @@ import { useState, useEffect, useCallback } from 'react';
 import { View, Text, FlatList, StyleSheet, Pressable, Modal, ScrollView, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRoute, useNavigation, useFocusEffect } from '@react-navigation/native';
+import FavoritesList from '../components/FavoritesList';
 import type { PurchaseRecord } from '../types';
 import { loadRecords, addRecord, deleteRecord } from '../utils/storage';
 import { filterByYear, calcTaxSummary } from '../utils/tax';
 import { exportToCsv } from '../utils/exportCsv';
 import Dashboard from '../components/Dashboard';
+import MonthlyChart from '../components/MonthlyChart';
 import RecordForm from '../components/RecordForm';
 import BarcodeScanner from '../components/BarcodeScanner';
+import ReceiptScanner from '../components/ReceiptScanner';
 import type { DrugEntry } from '../data/drugDatabase';
 
 const GREEN = '#1a6b3c';
@@ -20,14 +23,17 @@ export default function RecordsScreen() {
   const [showForm, setShowForm] = useState(false);
   const [showScanner, setShowScanner] = useState(false);
   const [prefillDrug, setPrefillDrug] = useState<DrugEntry | null>(null);
+  const [favRefreshKey, setFavRefreshKey] = useState(0);
+  const [showReceiptScanner, setShowReceiptScanner] = useState(false);
   const route = useRoute<any>();
   const navigation = useNavigation<any>();
 
   useEffect(() => { loadRecords().then(setRecords); }, []);
 
-  // 薬品検索タブからの「購入記録に追加」を受け取る
+  // 画面にフォーカスが戻るたびにお気に入りを再読み込み & 薬品検索からの遷移を処理
   useFocusEffect(
     useCallback(() => {
+      setFavRefreshKey((k) => k + 1); // FavoritesList を強制リフレッシュ
       const incoming = route.params?.prefillDrug as DrugEntry | undefined;
       if (incoming) {
         setPrefillDrug(incoming);
@@ -46,6 +52,16 @@ export default function RecordsScreen() {
     setRecords(next);
     setShowForm(false);
     setPrefillDrug(null);
+  }, [records]);
+
+  // レシートOCRで複数件を一括追加
+  const handleReceiptAdd = useCallback(async (newRecords: PurchaseRecord[]) => {
+    let current = records;
+    for (const r of newRecords) {
+      current = await addRecord(current, r);
+    }
+    setRecords(current);
+    setShowReceiptScanner(false);
   }, [records]);
 
   const handleDelete = useCallback(async (id: string) => {
@@ -79,6 +95,9 @@ export default function RecordsScreen() {
           <Pressable style={s.btnExport} onPress={() => exportToCsv(yearRecords, year)} disabled={yearRecords.length === 0}>
             <Text style={s.btnExportText}>CSV</Text>
           </Pressable>
+          <Pressable style={s.btnReceipt} onPress={() => setShowReceiptScanner(true)}>
+            <Text style={s.btnReceiptText}>🧾 レシート</Text>
+          </Pressable>
           <Pressable style={s.btnAdd} onPress={() => { setPrefillDrug(null); setShowForm(true); }}>
             <Text style={s.btnAddText}>＋ 追加</Text>
           </Pressable>
@@ -91,7 +110,15 @@ export default function RecordsScreen() {
         contentContainerStyle={s.listContent}
         ListHeaderComponent={
           <>
+            <FavoritesList
+              refreshKey={favRefreshKey}
+              onSelect={(drug) => {
+                setPrefillDrug(drug);
+                setShowForm(true);
+              }}
+            />
             <Dashboard summary={summary} year={year} onYearChange={setYear} />
+            <MonthlyChart records={records} year={year} />
             <Text style={s.listTitle}>{year}年の購入記録（{yearRecords.length}件）</Text>
           </>
         }
@@ -141,6 +168,16 @@ export default function RecordsScreen() {
       <Modal visible={showScanner} animationType="slide" onRequestClose={() => setShowScanner(false)}>
         <BarcodeScanner onDetected={handleScanDetected} onClose={() => setShowScanner(false)} />
       </Modal>
+
+      {/* レシートOCRスキャナー */}
+      <Modal visible={showReceiptScanner} animationType="slide" presentationStyle="pageSheet" onRequestClose={() => setShowReceiptScanner(false)}>
+        <SafeAreaView style={{ flex: 1, backgroundColor: '#fff' }}>
+          <ReceiptScanner
+            onAdd={handleReceiptAdd}
+            onClose={() => setShowReceiptScanner(false)}
+          />
+        </SafeAreaView>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -152,6 +189,8 @@ const s = StyleSheet.create({
   headerActions: { flexDirection: 'row', gap: 8 },
   btnExport: { backgroundColor: 'rgba(255,255,255,0.2)', borderRadius: 6, paddingHorizontal: 10, paddingVertical: 6 },
   btnExportText: { color: '#fff', fontWeight: '700', fontSize: 13 },
+  btnReceipt: { backgroundColor: 'rgba(255,255,255,0.15)', borderRadius: 6, paddingHorizontal: 10, paddingVertical: 6 },
+  btnReceiptText: { color: '#fff', fontWeight: '700', fontSize: 13 },
   btnAdd: { backgroundColor: '#fff', borderRadius: 6, paddingHorizontal: 12, paddingVertical: 6 },
   btnAddText: { color: GREEN, fontWeight: '700', fontSize: 13 },
   listContent: { padding: 12, gap: 0 },
