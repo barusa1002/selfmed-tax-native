@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { View, Text, TextInput, StyleSheet, Pressable, Switch, FlatList, Alert } from 'react-native';
+import { View, Text, TextInput, StyleSheet, Pressable, Switch, FlatList, Modal, Platform } from 'react-native';
+import DateTimePicker from '@react-native-community/datetimepicker';
 import type { PurchaseRecord } from '../types';
 import type { DrugEntry } from '../data/drugDatabase';
 import { searchByName } from '../data/drugDatabase';
@@ -28,6 +29,27 @@ export default function RecordForm({ onAdd, onCancel, onScanRequest, prefillDrug
   const [eligible, setEligible] = useState(editRecord?.eligible ?? prefillDrug?.eligible ?? true);
   const [suggestions, setSuggestions] = useState<DrugEntry[]>([]);
   const [error, setError] = useState('');
+  const [showDatePicker, setShowDatePicker] = useState(false);
+
+  // YYYY-MM-DD → ローカル時間のDateオブジェクト（タイムゾーンずれ防止）
+  const parseDateStr = (s: string): Date => {
+    const [y, m, d] = s.split('-').map(Number);
+    return new Date(y, m - 1, d);
+  };
+  const formatDateDisplay = (s: string): string => {
+    const [y, m, d] = s.split('-');
+    return `${y}年${parseInt(m)}月${parseInt(d)}日`;
+  };
+  const onDateChange = (_: unknown, selected?: Date) => {
+    if (selected) {
+      const y = selected.getFullYear();
+      const m = String(selected.getMonth() + 1).padStart(2, '0');
+      const d = String(selected.getDate()).padStart(2, '0');
+      setDate(`${y}-${m}-${d}`);
+    }
+    // inline表示では完了ボタンで閉じる（spinner系は即閉じる）
+    if (Platform.OS === 'android') setShowDatePicker(false);
+  };
 
   const handleNameChange = (v: string) => {
     setProductName(v);
@@ -62,7 +84,38 @@ export default function RecordForm({ onAdd, onCancel, onScanRequest, prefillDrug
       {error ? <Text style={s.error}>{error}</Text> : null}
 
       <Text style={s.label}>購入日</Text>
-      <TextInput style={s.input} value={date} onChangeText={setDate} placeholder="YYYY-MM-DD" />
+      <Pressable style={s.dateBtn} onPress={() => setShowDatePicker(true)}>
+        <Text style={s.dateBtnIcon}>📅</Text>
+        <Text style={s.dateBtnText}>{formatDateDisplay(date)}</Text>
+      </Pressable>
+
+      <Modal
+        visible={showDatePicker}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowDatePicker(false)}
+      >
+        <Pressable style={s.dateOverlay} onPress={() => setShowDatePicker(false)}>
+          <Pressable style={s.datePickerCard} onPress={(e) => e.stopPropagation()}>
+            <View style={s.datePickerHeader}>
+              <Text style={s.datePickerTitle}>購入日を選択</Text>
+              <Pressable style={s.datePickerDone} onPress={() => setShowDatePicker(false)}>
+                <Text style={s.datePickerDoneText}>完了</Text>
+              </Pressable>
+            </View>
+            <DateTimePicker
+              value={parseDateStr(date)}
+              mode="date"
+              display="inline"
+              locale="ja-JP"
+              onChange={onDateChange}
+              maximumDate={new Date()}
+              style={s.datePicker}
+              accentColor={GREEN}
+            />
+          </Pressable>
+        </Pressable>
+      </Modal>
 
       <Text style={s.label}>商品名 <Text style={s.required}>*</Text></Text>
       <View style={s.nameRow}>
@@ -124,6 +177,16 @@ export default function RecordForm({ onAdd, onCancel, onScanRequest, prefillDrug
 
 const s = StyleSheet.create({
   container: { backgroundColor: '#fff', borderRadius: 16, padding: 20 },
+  dateBtn: { flexDirection: 'row', alignItems: 'center', gap: 8, borderWidth: 1.5, borderColor: '#1a6b3c', borderRadius: 8, padding: 10, backgroundColor: '#f0fdf4', marginBottom: 2 },
+  dateBtnIcon: { fontSize: 16 },
+  dateBtnText: { fontSize: 15, color: '#1a6b3c', fontWeight: '600' },
+  dateOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', justifyContent: 'center', alignItems: 'center' },
+  datePickerCard: { backgroundColor: '#fff', borderRadius: 16, overflow: 'hidden', width: 340, shadowColor: '#000', shadowOpacity: 0.2, shadowRadius: 10 },
+  datePickerHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: '#e2e8f0' },
+  datePickerTitle: { fontSize: 15, fontWeight: '700', color: '#1a202c' },
+  datePickerDone: { backgroundColor: '#1a6b3c', borderRadius: 6, paddingHorizontal: 14, paddingVertical: 6 },
+  datePickerDoneText: { color: '#fff', fontWeight: '700', fontSize: 14 },
+  datePicker: { width: 340 },
   header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 },
   title: { fontSize: 17, fontWeight: '700' },
   cancel: { fontSize: 20, color: '#718096', paddingHorizontal: 4 },
