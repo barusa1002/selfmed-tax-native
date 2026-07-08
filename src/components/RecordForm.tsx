@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import { View, Text, TextInput, StyleSheet, Pressable, Switch, FlatList, Modal, Platform } from 'react-native';
-import DateTimePicker from '@react-native-community/datetimepicker';
+import { View, Text, TextInput, StyleSheet, Pressable, Switch, FlatList, Modal } from 'react-native';
+import CalendarPicker from './CalendarPicker';
 import type { PurchaseRecord } from '../types';
 import type { DrugEntry } from '../data/drugDatabase';
 import { searchByName } from '../data/drugDatabase';
@@ -31,24 +31,9 @@ export default function RecordForm({ onAdd, onCancel, onScanRequest, prefillDrug
   const [error, setError] = useState('');
   const [showDatePicker, setShowDatePicker] = useState(false);
 
-  // YYYY-MM-DD → ローカル時間のDateオブジェクト（タイムゾーンずれ防止）
-  const parseDateStr = (s: string): Date => {
-    const [y, m, d] = s.split('-').map(Number);
-    return new Date(y, m - 1, d);
-  };
   const formatDateDisplay = (s: string): string => {
     const [y, m, d] = s.split('-');
     return `${y}年${parseInt(m)}月${parseInt(d)}日`;
-  };
-  const onDateChange = (_: unknown, selected?: Date) => {
-    if (selected) {
-      const y = selected.getFullYear();
-      const m = String(selected.getMonth() + 1).padStart(2, '0');
-      const d = String(selected.getDate()).padStart(2, '0');
-      setDate(`${y}-${m}-${d}`);
-    }
-    // inline表示では完了ボタンで閉じる（spinner系は即閉じる）
-    if (Platform.OS === 'android') setShowDatePicker(false);
   };
 
   const handleNameChange = (v: string) => {
@@ -106,14 +91,9 @@ export default function RecordForm({ onAdd, onCancel, onScanRequest, prefillDrug
                 <Text style={s.datePickerDoneText}>完了</Text>
               </Pressable>
             </View>
-            <DateTimePicker
-              value={parseDateStr(date)}
-              mode="date"
-              display="inline"
-              locale="ja-JP"
-              onChange={onDateChange}
-              maximumDate={new Date()}
-              accentColor={GREEN}
+            <CalendarPicker
+              date={date}
+              onSelect={(d) => { setDate(d); setShowDatePicker(false); }}
             />
           </View>
         </View>
