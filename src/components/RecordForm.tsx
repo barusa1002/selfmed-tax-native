@@ -92,14 +92,17 @@ export default function RecordForm({ onAdd, onCancel, onScanRequest, prefillDrug
       <Modal
         visible={showDatePicker}
         transparent
-        animationType="fade"
+        animationType="slide"
         onRequestClose={() => setShowDatePicker(false)}
       >
-        <Pressable style={s.dateOverlay} onPress={() => setShowDatePicker(false)}>
-          <Pressable style={s.datePickerCard} onPress={(e) => e.stopPropagation()}>
+        <View style={s.dateOverlay}>
+          <View style={s.datePickerCard}>
             <View style={s.datePickerHeader}>
+              <Pressable onPress={() => setShowDatePicker(false)}>
+                <Text style={s.datePickerCancel}>キャンセル</Text>
+              </Pressable>
               <Text style={s.datePickerTitle}>購入日を選択</Text>
-              <Pressable style={s.datePickerDone} onPress={() => setShowDatePicker(false)}>
+              <Pressable onPress={() => setShowDatePicker(false)}>
                 <Text style={s.datePickerDoneText}>完了</Text>
               </Pressable>
             </View>
@@ -110,11 +113,10 @@ export default function RecordForm({ onAdd, onCancel, onScanRequest, prefillDrug
               locale="ja-JP"
               onChange={onDateChange}
               maximumDate={new Date()}
-              style={s.datePicker}
               accentColor={GREEN}
             />
-          </Pressable>
-        </Pressable>
+          </View>
+        </View>
       </Modal>
 
       <Text style={s.label}>商品名 <Text style={s.required}>*</Text></Text>
@@ -180,13 +182,12 @@ const s = StyleSheet.create({
   dateBtn: { flexDirection: 'row', alignItems: 'center', gap: 8, borderWidth: 1.5, borderColor: '#1a6b3c', borderRadius: 8, padding: 10, backgroundColor: '#f0fdf4', marginBottom: 2 },
   dateBtnIcon: { fontSize: 16 },
   dateBtnText: { fontSize: 15, color: '#1a6b3c', fontWeight: '600' },
-  dateOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', justifyContent: 'center', alignItems: 'center' },
-  datePickerCard: { backgroundColor: '#fff', borderRadius: 16, overflow: 'hidden', width: 340, shadowColor: '#000', shadowOpacity: 0.2, shadowRadius: 10 },
-  datePickerHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: '#e2e8f0' },
+  dateOverlay: { flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(0,0,0,0.45)' },
+  datePickerCard: { backgroundColor: '#fff', borderTopLeftRadius: 20, borderTopRightRadius: 20, paddingBottom: 36 },
+  datePickerHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: '#e2e8f0' },
   datePickerTitle: { fontSize: 15, fontWeight: '700', color: '#1a202c' },
-  datePickerDone: { backgroundColor: '#1a6b3c', borderRadius: 6, paddingHorizontal: 14, paddingVertical: 6 },
-  datePickerDoneText: { color: '#fff', fontWeight: '700', fontSize: 14 },
-  datePicker: { width: 340 },
+  datePickerCancel: { fontSize: 15, color: '#718096' },
+  datePickerDoneText: { fontSize: 15, color: '#1a6b3c', fontWeight: '700' },
   header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 },
   title: { fontSize: 17, fontWeight: '700' },
   cancel: { fontSize: 20, color: '#718096', paddingHorizontal: 4 },
