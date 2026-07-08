@@ -1,6 +1,7 @@
-import { useEffect, useState } from 'react';
+import { useState, useCallback } from 'react';
 import { View, Text, StyleSheet, ScrollView, Pressable, Alert, Switch, TextInput, Linking } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useFocusEffect } from '@react-navigation/native';
 import * as Print from 'expo-print';
 import * as Sharing from 'expo-sharing';
 import { loadRecords } from '../utils/storage';
@@ -89,10 +90,12 @@ export default function TaxReportScreen() {
   const [healthCheck, setHealthCheck] = useState<HealthCheckData | null>(null);
   const [notifEnabled, setNotifEnabled] = useState(false);
 
-  useEffect(() => {
-    loadRecords().then(setRecords);
-    loadHealthCheck(year).then(setHealthCheck);
-  }, []);
+  useFocusEffect(
+    useCallback(() => {
+      loadRecords().then(setRecords);
+      loadHealthCheck(year).then(setHealthCheck);
+    }, [year])
+  );
 
   const toggleHealthItem = async (key: string, value: boolean) => {
     if (!healthCheck) return;
