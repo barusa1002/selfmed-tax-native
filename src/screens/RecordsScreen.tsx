@@ -4,7 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRoute, useNavigation, useFocusEffect } from '@react-navigation/native';
 import FavoritesList from '../components/FavoritesList';
 import type { PurchaseRecord } from '../types';
-import { loadRecords, addRecord, deleteRecord } from '../utils/storage';
+import { loadRecords, addRecord, updateRecord, deleteRecord } from '../utils/storage';
 import { filterByYear, calcTaxSummary } from '../utils/tax';
 import { exportToCsv } from '../utils/exportCsv';
 import Dashboard from '../components/Dashboard';
@@ -25,6 +25,7 @@ export default function RecordsScreen() {
   const [prefillDrug, setPrefillDrug] = useState<DrugEntry | null>(null);
   const [favRefreshKey, setFavRefreshKey] = useState(0);
   const [showReceiptScanner, setShowReceiptScanner] = useState(false);
+  const [editingRecord, setEditingRecord] = useState<PurchaseRecord | null>(null);
   const route = useRoute<any>();
   const navigation = useNavigation<any>();
 
@@ -52,6 +53,13 @@ export default function RecordsScreen() {
     setRecords(next);
     setShowForm(false);
     setPrefillDrug(null);
+  }, [records]);
+
+  const handleUpdate = useCallback(async (record: PurchaseRecord) => {
+    const next = await updateRecord(records, record);
+    setRecords(next);
+    setShowForm(false);
+    setEditingRecord(null);
   }, [records]);
 
   // レシートOCRで複数件を一括追加
@@ -140,25 +148,32 @@ export default function RecordsScreen() {
                 <Text style={s.tagText}>{r.eligible ? '対象' : '対象外'}</Text>
               </View>
               <Text style={s.rowAmount}>¥{fmt(r.amount)}</Text>
-              <Pressable onPress={() => handleDelete(r.id)}>
-                <Text style={s.deleteBtn}>削除</Text>
-              </Pressable>
+              <View style={s.rowActions}>
+                <Pressable onPress={() => { setEditingRecord(r); setPrefillDrug(null); setShowForm(true); }}>
+                  <Text style={s.editBtn}>編集</Text>
+                </Pressable>
+                <Pressable onPress={() => handleDelete(r.id)}>
+                  <Text style={s.deleteBtn}>削除</Text>
+                </Pressable>
+              </View>
             </View>
           </View>
         )}
         ItemSeparatorComponent={() => <View style={s.separator} />}
       />
 
-      {/* 記録追加モーダル */}
-      <Modal visible={showForm} animationType="slide" presentationStyle="pageSheet" onRequestClose={() => setShowForm(false)}>
+      {/* 記録追加・編集モーダル */}
+      <Modal visible={showForm} animationType="slide" presentationStyle="pageSheet" onRequestClose={() => { setShowForm(false); setEditingRecord(null); setPrefillDrug(null); }}>
         <SafeAreaView style={s.modalSafe}>
           <ScrollView contentContainerStyle={s.modalScroll} keyboardShouldPersistTaps="handled">
             <RecordForm
-              key={prefillDrug?.jan ?? 'manual'}
+              key={editingRecord?.id ?? prefillDrug?.jan ?? 'manual'}
               onAdd={handleAdd}
-              onCancel={() => { setShowForm(false); setPrefillDrug(null); }}
+              onCancel={() => { setShowForm(false); setEditingRecord(null); setPrefillDrug(null); }}
               onScanRequest={() => { setShowForm(false); setShowScanner(true); }}
-              prefillDrug={prefillDrug}
+              prefillDrug={editingRecord ? null : prefillDrug}
+              editRecord={editingRecord}
+              onUpdate={handleUpdate}
             />
           </ScrollView>
         </SafeAreaView>
@@ -210,6 +225,8 @@ const s = StyleSheet.create({
   tagNot: { backgroundColor: '#e2e8f0' },
   tagText: { fontSize: 10, fontWeight: '700' },
   rowAmount: { fontSize: 15, fontWeight: '700' },
+  rowActions: { flexDirection: 'row', gap: 10 },
+  editBtn: { color: '#2b6cb0', fontSize: 12 },
   deleteBtn: { color: '#e53e3e', fontSize: 12 },
   separator: { height: 6 },
   modalSafe: { flex: 1, backgroundColor: '#f0f4f8' },

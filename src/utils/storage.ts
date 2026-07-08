@@ -23,6 +23,12 @@ export async function addRecord(records: PurchaseRecord[], record: PurchaseRecor
   return next;
 }
 
+export async function updateRecord(records: PurchaseRecord[], record: PurchaseRecord): Promise<PurchaseRecord[]> {
+  const next = records.map((r) => (r.id === record.id ? record : r));
+  await saveRecords(next);
+  return next;
+}
+
 export async function deleteRecord(records: PurchaseRecord[], id: string): Promise<PurchaseRecord[]> {
   const next = records.filter((r) => r.id !== id);
   await saveRecords(next);

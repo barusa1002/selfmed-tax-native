@@ -9,18 +9,23 @@ interface Props {
   onCancel: () => void;
   onScanRequest: () => void;
   prefillDrug?: DrugEntry | null;
+  editRecord?: PurchaseRecord | null;
+  onUpdate?: (record: PurchaseRecord) => void;
 }
 
 const GREEN = '#1a6b3c';
 
-export default function RecordForm({ onAdd, onCancel, onScanRequest, prefillDrug }: Props) {
+export default function RecordForm({ onAdd, onCancel, onScanRequest, prefillDrug, editRecord, onUpdate }: Props) {
+  const isEdit = !!editRecord;
   const today = new Date().toISOString().split('T')[0];
-  const [date, setDate] = useState(today);
-  const [productName, setProductName] = useState(prefillDrug?.name ?? '');
-  const [amount, setAmount] = useState(prefillDrug ? String(prefillDrug.price) : '');
-  const [store, setStore] = useState('');
-  const [note, setNote] = useState('');
-  const [eligible, setEligible] = useState(prefillDrug?.eligible ?? true);
+  const [date, setDate] = useState(editRecord?.date ?? today);
+  const [productName, setProductName] = useState(editRecord?.productName ?? prefillDrug?.name ?? '');
+  const [amount, setAmount] = useState(
+    editRecord ? String(editRecord.amount) : prefillDrug ? String(prefillDrug.price) : ''
+  );
+  const [store, setStore] = useState(editRecord?.store ?? '');
+  const [note, setNote] = useState(editRecord?.note ?? '');
+  const [eligible, setEligible] = useState(editRecord?.eligible ?? prefillDrug?.eligible ?? true);
   const [suggestions, setSuggestions] = useState<DrugEntry[]>([]);
   const [error, setError] = useState('');
 
@@ -40,21 +45,17 @@ export default function RecordForm({ onAdd, onCancel, onScanRequest, prefillDrug
   const handleSubmit = () => {
     if (!productName.trim()) { setError('商品名を入力してください'); return; }
     if (!amount || Number(amount) <= 0) { setError('金額を正しく入力してください'); return; }
-    onAdd({
-      id: Math.random().toString(36).slice(2),
-      date,
-      productName: productName.trim(),
-      amount: Number(amount),
-      store: store.trim(),
-      note: note.trim(),
-      eligible,
-    });
+    if (isEdit && editRecord && onUpdate) {
+      onUpdate({ ...editRecord, date, productName: productName.trim(), amount: Number(amount), store: store.trim(), note: note.trim(), eligible });
+    } else {
+      onAdd({ id: Math.random().toString(36).slice(2), date, productName: productName.trim(), amount: Number(amount), store: store.trim(), note: note.trim(), eligible });
+    }
   };
 
   return (
     <View style={s.container}>
       <View style={s.header}>
-        <Text style={s.title}>購入記録を追加</Text>
+        <Text style={s.title}>{isEdit ? '記録を編集' : '購入記録を追加'}</Text>
         <Pressable onPress={onCancel}><Text style={s.cancel}>✕</Text></Pressable>
       </View>
 
@@ -114,7 +115,7 @@ export default function RecordForm({ onAdd, onCancel, onScanRequest, prefillDrug
           <Text style={s.btnSecondaryText}>キャンセル</Text>
         </Pressable>
         <Pressable style={s.btnPrimary} onPress={handleSubmit}>
-          <Text style={s.btnPrimaryText}>追加する</Text>
+          <Text style={s.btnPrimaryText}>{isEdit ? '更新する' : '追加する'}</Text>
         </Pressable>
       </View>
     </View>
